@@ -1,66 +1,65 @@
+let x = [];
+let y = [];
+let fourierX;
+let fourierY;
+let time = 0;
+let path = [];
+
 function setup() {
-    createCanvas(windowWidth, windowHeight);
-    background(128, 128, 128);
-    radii = [25, 50, 75, 100]
-    initialAngles = []
-    rotaionSpeed = []
+  createCanvas(windowWidth, windowHeight);
+  const skip = 6;
+  for (let i = 0; i < shape.length; i += skip) {
+    x.push(shape[i].x * 5);
+    y.push(shape[i].y * 5);
+  }
+  fourierX = dft(x);
+  fourierY = dft(y);
 
-    shape = []
+  fourierX.sort((a, b) => b.amp - a.amp);
+  fourierY.sort((a, b) => b.amp - a.amp);
+}
 
-    speed = 0.2
+function epiCycles(x, y, rotation, fourier) {
+  for (let i = 0; i < fourier.length; i++) {
+    let prevx = x;
+    let prevy = y;
+    let freq = fourier[i].freq;
+    let radius = fourier[i].amp;
+    let phase = fourier[i].phase;
+    x += radius * cos(freq * time + phase + rotation);
+    y += radius * sin(freq * time + phase + rotation);
 
-    for (radius of radii) {
-        // initialAngles.push(random() * TWO_PI)
-        // rotaionSpeed.push(random() * 0.05)
-
-        initialAngles.push(0)
-        rotaionSpeed.push(speed)
-        speed /= 2
-
-    }
-
-    //noLoop()
+    stroke(255, 100);
+    noFill();
+    ellipse(prevx, prevy, radius * 2);
+    stroke(255);
+    line(prevx, prevy, x, y);
+  }
+  return createVector(x, y);
 }
 
 function draw() {
-    //background(128, 128, 128);
-    noFill()
-    translate(windowWidth / 2, windowHeight / 2)
-    point(0, 0)
-    ellipseMode(RADIUS)
+  background(0);
 
+  let vx = epiCycles(width / 2 + 100, 100, 0, fourierX);
+  let vy = epiCycles(100, height / 2 + 100, HALF_PI, fourierY);
+  let v = createVector(vx.x, vy.y);
+  path.unshift(v);
+  line(vx.x, vx.y, v.x, v.y);
+  line(vy.x, vy.y, v.x, v.y);
 
-    x = 0;
-    y = 0;
+  beginShape();
+  noFill();
+  for (let i = 0; i < path.length; i++) {
+    vertex(path[i].x, path[i].y);
+  }
+  endShape();
 
+  const dt = TWO_PI / fourierY.length;
+  time += dt;
 
-    for (let i = 0; i < radii.length; i++) {
-        // ellipse(0, 0, radii[i], radii[i])
-        currentAngle = initialAngles[i];
-        x1 = 0;
-        y1 = 0;
-        x2 = radii[i] * cos(currentAngle);
-        y2 = radii[i] * sin(currentAngle);
-        x += x2;
-        y += y2;
-        // line(x1, y1, x2, y2)
-        initialAngles[i] -= rotaionSpeed[i]
-    }
-
-    shape.push({
-        x: x,
-        y: y
-    })
-
-    beginShape()
-    for (p of shape) {
-        vertex(p.x, p.y)
-        // point(p.x, p.y)
-    }
-    endShape()
-
-}
-
-function windowResized() {
-    resizeCanvas(windowWidth, windowHeight);
+  if (time > TWO_PI) {
+    time = 0;
+    path = [];
+  }
 }
