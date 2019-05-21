@@ -4,13 +4,28 @@ let fourierX;
 let fourierY;
 let time = 0;
 let path = [];
+let state = 2;
+let drawing = [];
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
-  const skip = 6;
-  for (let i = 0; i < shape.length; i += skip) {
-    x.push(shape[i].x * 5);
-    y.push(shape[i].y * 5);
+}
+
+function mousePressed() {
+  state = 0;
+  drawing = [];
+  x = [];
+  y = [];
+  time = 0;
+  path = [];
+}
+
+function mouseReleased() {
+  state = 1;
+  const skip = 1;
+  for (let i = 0; i < drawing.length; i += skip) {
+    x.push(drawing[i].x);
+    y.push(drawing[i].y);
   }
   fourierX = dft(x);
   fourierY = dft(y);
@@ -41,25 +56,38 @@ function epiCycles(x, y, rotation, fourier) {
 function draw() {
   background(0);
 
-  let vx = epiCycles(width / 2 + 100, 100, 0, fourierX);
-  let vy = epiCycles(100, height / 2 + 100, HALF_PI, fourierY);
-  let v = createVector(vx.x, vy.y);
-  path.unshift(v);
-  line(vx.x, vx.y, v.x, v.y);
-  line(vy.x, vy.y, v.x, v.y);
+  if (state == 0) {
+    let point = createVector(mouseX - width / 2, mouseY - height / 2);
+    drawing.push(point);
+    stroke(255);
+    noFill();
+    beginShape();
+    for (let v of drawing) {
+      vertex(v.x + width / 2, v.y + height / 2);
+    }
+    endShape();
+  } if(state == 1) {
 
-  beginShape();
-  noFill();
-  for (let i = 0; i < path.length; i++) {
-    vertex(path[i].x, path[i].y);
-  }
-  endShape();
+    let vx = epiCycles(width / 2 + 100, 100, 0, fourierX);
+    let vy = epiCycles(100, height / 2 + 100, HALF_PI, fourierY);
+    let v = createVector(vx.x, vy.y);
+    path.unshift(v);
+    line(vx.x, vx.y, v.x, v.y);
+    line(vy.x, vy.y, v.x, v.y);
 
-  const dt = TWO_PI / fourierY.length;
-  time += dt;
+    beginShape();
+    noFill();
+    for (let i = 0; i < path.length; i++) {
+      vertex(path[i].x, path[i].y);
+    }
+    endShape();
 
-  if (time > TWO_PI) {
-    time = 0;
-    path = [];
+    const dt = TWO_PI / fourierY.length;
+    time += dt;
+
+    if (time > TWO_PI) {
+      time = 0;
+      path = [];
+    }
   }
 }
